@@ -19,8 +19,8 @@ fi
 echo "Cluster: ${cluster}"
 
 services=$(aws ecs list-services --cluster $cluster)
-service_names=$(echo "$services" | jq -r '.serviceArns[] | sub("arn:aws:ecs:eu-south-1:312297881051:service/extendi-smd-dev/"; "")')
-
+service_arns=$(echo "$services" | jq -r '.serviceArns[]')
+service_names=$(echo "$services" | jq -r '.serviceArns[] | split("/")[-1]')
 echo -e "[Services]\n${service_names}"
 
 if ! echo "$service_names" | grep -qw "$service_name"; then
@@ -29,7 +29,8 @@ if ! echo "$service_names" | grep -qw "$service_name"; then
 fi
 
 tasks=$(aws ecs list-tasks --cluster $cluster --service-name $service_name)
-task_id=$(echo "$tasks" | jq -r '.taskArns[] | split("/") | .[-1]')
+first_task_arn=$(echo "$tasks" | jq -r '.taskArns[0]')
+task_id=$(echo "$first_task_arn" | awk -F/ '{print $NF}')
 
 echo -e "[Tasks]\n${tasks}"
 
